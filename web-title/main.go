@@ -13,7 +13,7 @@ import (
 
 func main() {
 	if len(os.Args) != 2 {
-		fmt.Println("Usage: ", os.Args[0], " [url]")
+		fmt.Println("Usage: web-title.exe [url]")
 		os.Exit(1)
 	}
 
