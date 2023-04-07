@@ -1,7 +1,7 @@
 package main
 
 import (
-  "bytes"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,8 +16,11 @@ func main() {
         fmt.Println("Usage: web-title [url]")
         os.Exit(1)
     }
-
-    url := os.Args[1]
+	
+	url := os.Args[1]
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		url = "https://" + url
+	}
     resp, err := http.Get(url)
 
     if err != nil {
