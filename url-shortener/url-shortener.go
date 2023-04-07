@@ -25,7 +25,7 @@ func shortenUrl(w http.ResponseWriter, r *http.Request) {
 	shortUrl := generateShortUrl()
 	urls[shortUrl] = longUrl
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "Shortened URL: http://%s/%s", r.Host, shortUrl)
+	fmt.Fprintf(w, "Shortened URL: http://%s/%s\n", r.Host, shortUrl)
 }
 
 func redirectToLongUrl(w http.ResponseWriter, r *http.Request) {
@@ -58,3 +58,5 @@ func main() {
 	http.HandleFunc("/", redirectToLongUrl)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
+
+// curl -X POST http://localhost:8080/shorten -d "url=https://www.example.com"
