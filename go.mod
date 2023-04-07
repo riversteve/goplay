@@ -1,4 +1,4 @@
-module example/web-title
+module github.com/riversteve/goplay
 
 go 1.20
 
