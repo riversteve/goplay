@@ -5,11 +5,14 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/boltdb/bolt"
 )
+
+var cleanupOnce sync.Once
 
 func TestMain(m *testing.M) {
 	// Set up the database for testing
@@ -17,8 +20,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	defer os.Remove("test_urls.db")
-	defer testDB.Close()
 
 	err = testDB.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte("urls"))
@@ -35,8 +36,12 @@ func TestMain(m *testing.M) {
 	// Run tests
 	exitCode := m.Run()
 
-	// Restore the original 'db' variable
+	// Restore the original 'db' variable and clean up the test database
 	db = origDB
+	cleanupOnce.Do(func() {
+		testDB.Close()
+		os.Remove("test_urls.db")
+	})
 
 	// Exit with the test result exit code
 	os.Exit(exitCode)
