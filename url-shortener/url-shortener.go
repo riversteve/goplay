@@ -88,6 +88,32 @@ func loadUrl(shortUrl string) (string, error) {
 	return longUrl, err
 }
 
+func deleteUrl(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "DELETE" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	shortUrl := r.FormValue("shortUrl")
+	if shortUrl == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	err := removeUrl(shortUrl)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "URL entry deleted: %s\n", shortUrl)
+}
+
+func removeUrl(shortUrl string) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("urls"))
+		return b.Delete([]byte(shortUrl))
+	})
+}
+
 func main() {
 	var err error
 	db, err = bolt.Open("urls.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
@@ -105,6 +131,7 @@ func main() {
 	}
 
 	http.HandleFunc("/shorten", shortenUrl)
+	http.HandleFunc("/delete", deleteUrl)
 	http.HandleFunc("/", redirectToLongUrl)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
