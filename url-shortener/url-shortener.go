@@ -10,6 +10,7 @@ import (
 	mrand "math/rand"
 
 	"github.com/boltdb/bolt"
+	"github.com/gorilla/mux"
 )
 
 var (
@@ -93,12 +94,17 @@ func deleteUrl(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+	err := r.ParseForm()
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	shortUrl := r.FormValue("shortUrl")
 	if shortUrl == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err := removeUrl(shortUrl)
+	err = removeUrl(shortUrl)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -130,10 +136,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	http.HandleFunc("/shorten", shortenUrl)
-	http.HandleFunc("/delete", deleteUrl)
-	http.HandleFunc("/", redirectToLongUrl)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	r := mux.NewRouter()
+	r.HandleFunc("/shorten", shortenUrl).Methods("POST")
+	r.HandleFunc("/delete", deleteUrl).Methods("DELETE")
+	r.HandleFunc("/{shortUrl:[a-zA-Z0-9]+}", redirectToLongUrl).Methods("GET")
+
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 // curl -X POST http://localhost:8080/shorten -d "url=https://www.example.com"
+// curl -X DELETE -d "shortUrl=test123" http://localhost:8080/delete
