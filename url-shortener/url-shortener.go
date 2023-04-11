@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -11,8 +12,9 @@ import (
 )
 
 var (
-	letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	db      *bolt.DB
+	letters                  = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+	db                       *bolt.DB
+	errShortUrlAlreadyExists = errors.New("shortUrl already exists")
 )
 
 func shortenUrl(w http.ResponseWriter, r *http.Request) {
@@ -25,8 +27,15 @@ func shortenUrl(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	shortUrl := generateShortUrl()
-	err := saveUrl(shortUrl, longUrl)
+	var shortUrl string
+	var err error
+	for {
+		shortUrl = generateShortUrl()
+		err = saveUrl(shortUrl, longUrl)
+		if err != errShortUrlAlreadyExists {
+			break
+		}
+	}
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -46,24 +55,19 @@ func redirectToLongUrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func generateShortUrl() string {
-	var shortUrl string
-	for {
-		b := make([]rune, 7)
-		for i := range b {
-			b[i] = letters[rand.Intn(len(letters))]
-		}
-		shortUrl = string(b)
-		_, err := loadUrl(shortUrl)
-		if err != nil {
-			break
-		}
+	b := make([]rune, 7)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
 	}
-	return shortUrl
+	return string(b)
 }
 
 func saveUrl(shortUrl, longUrl string) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("urls"))
+		if v := b.Get([]byte(shortUrl)); v != nil {
+			return errShortUrlAlreadyExists
+		}
 		return b.Put([]byte(shortUrl), []byte(longUrl))
 	})
 }
