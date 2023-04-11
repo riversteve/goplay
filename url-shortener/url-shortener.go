@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	"time"
+
+	mrand "math/rand"
 
 	"github.com/boltdb/bolt"
 )
@@ -15,6 +16,7 @@ var (
 	letters                  = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	db                       *bolt.DB
 	errShortUrlAlreadyExists = errors.New("shortUrl already exists")
+	rnd                      = mrand.New(mrand.NewSource(time.Now().UnixNano()))
 )
 
 func shortenUrl(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +59,7 @@ func redirectToLongUrl(w http.ResponseWriter, r *http.Request) {
 func generateShortUrl() string {
 	b := make([]rune, 7)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = letters[rnd.Intn(len(letters))]
 	}
 	return string(b)
 }
@@ -101,8 +103,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	rand.Seed(time.Now().UnixNano())
 
 	http.HandleFunc("/shorten", shortenUrl)
 	http.HandleFunc("/", redirectToLongUrl)
