@@ -149,7 +149,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/shorten", shortenUrl).Methods("POST")
 	r.HandleFunc("/delete", deleteUrl).Methods("DELETE")
-	r.HandleFunc("/{shortUrl:\\w{7}}}", redirectToLongUrl).Methods("GET")
+	r.HandleFunc("/{shortUrl:[a-zA-Z0-9]+}", redirectToLongUrl).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
