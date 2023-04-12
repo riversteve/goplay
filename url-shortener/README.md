@@ -6,6 +6,10 @@ URL shortener service
 git clone <repo url>
 
 go run url-shortener/urlshortener.go
-
-curl -X POST http://localhost:8080/shorten -d "url=https://www.example.com"
 ```
+
+## Create short URL
+`curl -X POST http://localhost:8080/shorten -d "url=https://www.example.com"`
+
+## Delete short URL
+`curl -X DELETE "http://localhost:8080/delete?shortUrl=test123"`
