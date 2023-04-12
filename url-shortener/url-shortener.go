@@ -95,17 +95,12 @@ func deleteUrl(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	err := r.ParseForm()
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
 	shortUrl := r.FormValue("shortUrl")
 	if shortUrl == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err = removeUrl(shortUrl)
+	err := removeUrl(shortUrl)
 	if err != nil {
 		if err == errShortUrlNotFound {
 			w.WriteHeader(http.StatusNotFound)
