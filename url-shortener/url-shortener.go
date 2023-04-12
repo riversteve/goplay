@@ -16,8 +16,9 @@ import (
 var (
 	letters                  = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 	db                       *bolt.DB
-	errShortUrlAlreadyExists = errors.New("shortUrl already exists")
 	rnd                      = mrand.New(mrand.NewSource(time.Now().UnixNano()))
+	errShortUrlAlreadyExists = errors.New("shortUrl already exists")
+	errShortUrlNotFound      = errors.New("shortUrl not found")
 )
 
 func shortenUrl(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +107,11 @@ func deleteUrl(w http.ResponseWriter, r *http.Request) {
 	}
 	err = removeUrl(shortUrl)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		if err == errShortUrlNotFound {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -114,10 +119,15 @@ func deleteUrl(w http.ResponseWriter, r *http.Request) {
 }
 
 func removeUrl(shortUrl string) error {
-	return db.Update(func(tx *bolt.Tx) error {
+	err := db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("urls"))
+		longUrl := b.Get([]byte(shortUrl))
+		if longUrl == nil {
+			return errShortUrlNotFound
+		}
 		return b.Delete([]byte(shortUrl))
 	})
+	return err
 }
 
 func main() {
@@ -145,4 +155,4 @@ func main() {
 }
 
 // curl -X POST http://localhost:8080/shorten -d "url=https://www.example.com"
-// curl -X DELETE -d "shortUrl=test123" http://localhost:8080/delete
+// curl -X DELETE "http://localhost:8080/delete?shortUrl=test123"

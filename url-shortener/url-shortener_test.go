@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
 	"sync"
@@ -125,8 +126,9 @@ func TestDeleteUrlHandler(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to save URL: %v", err)
 	}
-
-	req, err := http.NewRequest("DELETE", "/delete", strings.NewReader("shortUrl="+testShortUrl))
+	query := url.Values{}
+	query.Set("shortUrl", testShortUrl)
+	req, err := http.NewRequest("DELETE", "/delete?"+query.Encode(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
