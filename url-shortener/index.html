@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        input, button {
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <form id="shorten-form">
+        <input type="text" id="long-url" placeholder="Enter long URL" required pattern="^(https?:\/\/)?[^\s/$.?#].[^\s]*$">
+        <button type="submit">Shorten URL</button>
+        <input type="url" id="short-url" readonly>
+    </form>
+    <script>
+        document.getElementById("shorten-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const longUrlInput = document.getElementById("long-url");
+            const shortUrlInput = document.getElementById("short-url");
+
+            const response = await fetch("/shorten", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams({ url: longUrlInput.value }),
+            });
+
+            if (response.status === 201) {
+                const shortUrl = await response.text();
+                shortUrlInput.value = shortUrl.trim();
+            } else {
+                shortUrlInput.value = "Error: Unable to shorten URL";
+            }
+        });
+    </script>
+</body>
+</html>
