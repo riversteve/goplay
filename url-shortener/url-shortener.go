@@ -200,6 +200,10 @@ func helloUnsafe(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Hello from the public endpoint!")
 }
 
+func serveIndex(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "index.html")
+}
+
 func main() {
 	var err error
 	db, err = bolt.Open("urls.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
@@ -224,6 +228,7 @@ func main() {
 	apiV1.HandleFunc("/delete", deleteUrl).Methods("DELETE")
 
 	// Public routes without authentication middleware
+	r.HandleFunc("/", serveIndex).Methods("GET")
 	r.HandleFunc("/hello", helloUnsafe).Methods("GET")
 	r.HandleFunc("/shorten", shortenUrl).Methods("POST")
 	r.HandleFunc("/delete", deleteUrl).Methods("DELETE")
