@@ -176,9 +176,12 @@ func checkHashedKeyFromDatabase(apiKey string) bool {
 func authenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		apiKey := r.Header.Get("X-API-Key")
+		if apiKey == "" {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 		hashedKey, err := hashAPIKey(apiKey)
 		//hashedKey, err := getHashedKeyFromDatabase(hashedKey)
-
 		if err != nil || !checkHashedKeyFromDatabase(hashedKey) {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
