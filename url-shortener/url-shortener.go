@@ -11,6 +11,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -142,6 +143,60 @@ func createBucket(db *bolt.DB, bucket string) error {
 	})
 }
 
+func hashAPIKey(apiKey string) (string, error) {
+	hashedKey, err := bcrypt.GenerateFromPassword([]byte(apiKey), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedKey), nil
+}
+
+/*
+func validateAPIKey(apiKey string, hashedKey string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedKey), []byte(apiKey))
+	return err == nil
+}
+*/
+
+func checkHashedKeyFromDatabase(apiKey string) bool {
+	err := admindb.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("APIKeys"))
+		if bucket == nil {
+			return fmt.Errorf("APIKeys bucket not found")
+		}
+		hashedKeyBytes := bucket.Get([]byte(apiKey))
+		if hashedKeyBytes == nil {
+			return fmt.Errorf("API key not found")
+		}
+		return nil
+	})
+	return err == nil
+}
+
+func authenticationMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiKey := r.Header.Get("X-API-Key")
+		hashedKey, err := hashAPIKey(apiKey)
+		//hashedKey, err := getHashedKeyFromDatabase(hashedKey)
+
+		if err != nil || !checkHashedKeyFromDatabase(hashedKey) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func helloSafe(w http.ResponseWriter, r *http.Request) {
+	// Your protected route logic
+	fmt.Fprint(w, "Hello! This is a protected endpoint")
+}
+
+func helloUnsafe(w http.ResponseWriter, r *http.Request) {
+	// Your public route logic
+	fmt.Fprint(w, "Hello from the public endpoint!")
+}
+
 func main() {
 	var err error
 	db, err = bolt.Open("urls.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
@@ -153,10 +208,20 @@ func main() {
 
 	err = createBucket(db, "urls")
 	logError(err)
-	err = createBucket(admindb, "admin")
+	err = createBucket(admindb, "APIKeys")
 	logError(err)
 
 	r := mux.NewRouter()
+
+	// Protected routes under "/api/v1" with authentication middleware
+	apiV1 := r.PathPrefix("/api/v1").Subrouter()
+	apiV1.Use(authenticationMiddleware)
+	apiV1.HandleFunc("/hello", helloSafe).Methods("GET")
+	// Including /delete endpoint in both protected and public routes for easy testing
+	apiV1.HandleFunc("/delete", deleteUrl).Methods("DELETE")
+
+	// Public routes without authentication middleware
+	r.HandleFunc("/hello", helloUnsafe).Methods("GET")
 	r.HandleFunc("/shorten", shortenUrl).Methods("POST")
 	r.HandleFunc("/delete", deleteUrl).Methods("DELETE")
 	r.HandleFunc("/{shortUrl:[a-zA-Z0-9]+}", redirectToLongUrl).Methods("GET")
