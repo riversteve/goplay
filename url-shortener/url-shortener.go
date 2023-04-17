@@ -1,13 +1,10 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"os"
 	"time"
-
-	mrand "math/rand"
 
 	"github.com/boltdb/bolt"
 	"github.com/gorilla/mux"
@@ -15,12 +12,8 @@ import (
 )
 
 var (
-	letters                  = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-	db                       *bolt.DB
-	admindb                  *bolt.DB
-	rnd                      = mrand.New(mrand.NewSource(time.Now().UnixNano()))
-	errShortUrlAlreadyExists = errors.New("shortUrl already exists")
-	errShortUrlNotFound      = errors.New("shortUrl not found")
+	db      *bolt.DB
+	admindb *bolt.DB
 )
 
 // If error exists then log.Fatal(error)
