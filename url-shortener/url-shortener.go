@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	mrand "math/rand"
@@ -29,12 +31,40 @@ func shortenUrl(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	longUrl := r.FormValue("url")
+	// Fail fast if empty request
 	if longUrl == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	// Add https if it does not exist
+	if !strings.HasPrefix(longUrl, "http://") && !strings.HasPrefix(longUrl, "https://") {
+		longUrl = "https://" + longUrl
+	}
+	// Begin URL parsing checks
+	parsedUrl, err := url.Parse(longUrl)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	// Check https scheme
+	if !(parsedUrl.Scheme == "https") && !(parsedUrl.Scheme == "http") {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error: Invalid scheme.")
+	}
+	// Check for and remove localhost variations. Does not cover all variations
+	if strings.ToLower(parsedUrl.Hostname()) == "localhost" || parsedUrl.Hostname() == "127.0.0.1" {
+		parsedUrl.Host = strings.Replace(parsedUrl.Host, parsedUrl.Host, "", 1)
+	}
+	// Check if parsedUrl is only a relative path
+	if parsedUrl.Host == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Error: URL must be an absolute URL, not a relative path.")
+		return
+	}
+	// Finally put longUrl back after checks
+	longUrl = parsedUrl.String()
+
 	var shortUrl string
-	var err error
 	for {
 		shortUrl = generateShortUrl()
 		err = saveUrl(shortUrl, longUrl)
