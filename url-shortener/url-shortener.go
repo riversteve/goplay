@@ -39,6 +39,10 @@ func createBucket(db *bolt.DB, bucket string) error {
 	})
 }
 
+func serveIndex(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "index.html")
+}
+
 func Init() {
 	port := os.Getenv("PORT")
 
@@ -63,21 +67,10 @@ func main() {
 
 	api.DB = db
 	api.AdminDB = admindb
+
 	r := mux.NewRouter()
-
-	// Protected routes under "/api/v1" with authentication middleware
-	apiV1 := r.PathPrefix("/api/v1").Subrouter()
-	apiV1.Use(api.AuthenticationMiddleware)
-	apiV1.HandleFunc("/hello", helloSafe).Methods("GET")
-	// Including /delete endpoint in both protected and public routes for easy testing
-	apiV1.HandleFunc("/delete", deleteUrl).Methods("DELETE")
-
-	// Public routes without authentication middleware
+	api.RegisterRoutes(r)
 	r.HandleFunc("/", serveIndex).Methods("GET")
-	r.HandleFunc("/hello", helloUnsafe).Methods("GET")
-	r.HandleFunc("/shorten", shortenUrl).Methods("POST")
-	r.HandleFunc("/delete", deleteUrl).Methods("DELETE")
-	r.HandleFunc("/{shortUrl:[a-zA-Z0-9]+}", redirectToLongUrl).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

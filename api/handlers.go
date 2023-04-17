@@ -31,10 +31,6 @@ func helloUnsafe(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Hello from the public endpoint!")
 }
 
-func ServeIndex(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html")
-}
-
 func RedirectToLongUrl(w http.ResponseWriter, r *http.Request) {
 	shortUrl := r.URL.Path[1:]
 	longUrl, err := loadUrl(shortUrl)
