@@ -53,8 +53,8 @@ func validateAPIKey(apiKey string, hashedKey string) bool {
 func GenerateAPIKey(prefix ...string) (string, error) {
 	// Set default prefix
 	defaultPrefix := "BEEF"
-
-	length := 36
+	// Set API key length
+	length := 40
 	// Check if a custom prefix is provided and within the allowed length
 	if len(prefix) > 0 && len(prefix[0]) <= 4 {
 		defaultPrefix = prefix[0]
@@ -103,15 +103,3 @@ func checkHashedKeyFromDatabase(apiKey string) bool {
 	})
 	return err == nil
 }
-
-/*
-func main() {
-	apiKey, err := GenerateAPIKey(32)
-	if err != nil {
-		fmt.Println("Error generating API key:", err)
-		return
-	}
-
-	fmt.Println("Generated API key:", apiKey)
-}
-*/
