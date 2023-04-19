@@ -7,19 +7,35 @@ import (
 )
 
 type LogMessage struct {
-	timestamp time.Time
-	message   string
+	timestamp  time.Time
+	level      string
+	sourceFunc string
+	message    string
 }
 
 var logChannel = make(chan LogMessage)
 
+func formatLogMessage(level, sourceFunc, message string) LogMessage {
+	return LogMessage{
+		timestamp:  time.Now(),
+		level:      level,
+		sourceFunc: sourceFunc,
+		message:    message,
+	}
+}
+
 func generateLogs() {
 	for {
 		time.Sleep(1 * time.Second)
-		logMsg := LogMessage{
-			timestamp: time.Now(),
-			message:   fmt.Sprintf("Log message at %s", time.Now().Format(time.RFC3339)),
-		}
+		logMsg := formatLogMessage("INFO", "generateLogs", fmt.Sprintf("Log message at %s", time.Now().Format(time.RFC3339)))
+		logChannel <- logMsg
+	}
+}
+
+func anotherFunction() {
+	for {
+		time.Sleep(2 * time.Second)
+		logMsg := formatLogMessage("DEBUG", "anotherFunction", fmt.Sprintf("Another function log at %s", time.Now().Format(time.RFC3339)))
 		logChannel <- logMsg
 	}
 }
@@ -36,16 +52,18 @@ func handleSSE(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for logMsg := range logChannel {
-		fmt.Fprintf(w, "data: %s\n\n", logMsg.message)
+		logData := fmt.Sprintf("[%s] [%s] [%s] %s", logMsg.timestamp.Format(time.RFC3339), logMsg.level, logMsg.sourceFunc, logMsg.message)
+		fmt.Fprintf(w, "data: %s\n\n", logData)
 		flusher.Flush()
 	}
 }
 
 func main() {
 	go generateLogs()
+	go anotherFunction()
 
 	http.HandleFunc("/sse", handleSSE)
-	// Serve the index.html file
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "index.html")
 	})
