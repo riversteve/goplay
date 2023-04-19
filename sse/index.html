@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monitoring and Logging with SSE in Go</title>
+</head>
+<body>
+    <h1>Real-Time Log Messages</h1>
+    <pre id="logs"></pre>
+    <script>
+        const logsElement = document.getElementById('logs');
+        const source = new EventSource('/sse');
+
+        source.onmessage = (event) => {
+            logsElement.textContent += event.data + '\n';
+        };
+
+        source.onerror = (error) => {
+            console.error('Error in EventSource', error);
+            source.close();
+        };
+    </script>
+</body>
+</html>
